@@ -54,16 +54,16 @@ void avcodec_register_all(void)
     initialized = 1;
 
     /* hardware accelerators */
-    REGISTER_HWACCEL (H263_VAAPI, h263_vaapi);
-    REGISTER_HWACCEL (H264_DXVA2, h264_dxva2);
-    REGISTER_HWACCEL (H264_VAAPI, h264_vaapi);
-    REGISTER_HWACCEL (MPEG2_DXVA2, mpeg2_dxva2);
-    REGISTER_HWACCEL (MPEG2_VAAPI, mpeg2_vaapi);
-    REGISTER_HWACCEL (MPEG4_VAAPI, mpeg4_vaapi);
-    REGISTER_HWACCEL (VC1_DXVA2, vc1_dxva2);
-    REGISTER_HWACCEL (VC1_VAAPI, vc1_vaapi);
-    REGISTER_HWACCEL (WMV3_DXVA2, wmv3_dxva2);
-    REGISTER_HWACCEL (WMV3_VAAPI, wmv3_vaapi);
+    REGISTER_HWACCEL (H263_VAAPI, h263_vaapi); //ec: vaapi_mpeg2.c:141
+    REGISTER_HWACCEL (H264_DXVA2, h264_dxva2); //ec: dxva2_h264.c:426
+    REGISTER_HWACCEL (H264_VAAPI, h264_vaapi); //ec: vaapi_h264.c:337
+    REGISTER_HWACCEL (MPEG2_DXVA2, mpeg2_dxva2); //ec: dxva2_mpeg2.c:263
+    REGISTER_HWACCEL (MPEG2_VAAPI, mpeg2_vaapi); //ec: vaapi_mpeg2.c:141
+    REGISTER_HWACCEL (MPEG4_VAAPI, mpeg4_vaapi); //ec: vaapi_mpeg4.c:153
+    REGISTER_HWACCEL (VC1_DXVA2, vc1_dxva2); //ec: dxva2_vc1.c:280
+    REGISTER_HWACCEL (VC1_VAAPI, vc1_vaapi); //ec: vaapi_vc1.c:342
+    REGISTER_HWACCEL (WMV3_DXVA2, wmv3_dxva2); //ec: dxva2_vc1.c:267
+    REGISTER_HWACCEL (WMV3_VAAPI, wmv3_vaapi); //ec: vaapi_vc1.c:329
 
     /* video codecs */
     REGISTER_ENCODER (A64MULTI, a64multi);

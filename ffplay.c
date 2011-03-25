@@ -124,6 +124,7 @@ enum {
     AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
 };
 
+//ec: encapsulate the global variable
 typedef struct VideoState {
     SDL_Thread *parse_tid;
     SDL_Thread *video_tid;
@@ -3089,14 +3090,14 @@ int main(int argc, char **argv)
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     /* register all codecs, demux and protocols */
-    avcodec_register_all();
+    avcodec_register_all(); //ec: hwaccel codecs parser and  bitstream filters
 #if CONFIG_AVDEVICE
     avdevice_register_all();
 #endif
 #if CONFIG_AVFILTER
     avfilter_register_all();
 #endif
-    av_register_all();
+    av_register_all(); //ec: demux and protocols
 
     init_opts();
 

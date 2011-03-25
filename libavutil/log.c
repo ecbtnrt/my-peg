@@ -126,6 +126,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
             fprintf(stderr, "    Last message repeated %d times\r", count);
         return;
     }
+    //ec: now the line and prev is differnet, and print the last message repeated
+    //ec: count is all the same string number-1
     if(count>0){
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count=0;
