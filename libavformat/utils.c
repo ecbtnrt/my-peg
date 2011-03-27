@@ -595,6 +595,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     return ret;
 }
 
+//ec: Opens a media file filename, stores the format context in the address pointed to by ptr.
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
@@ -1220,6 +1221,16 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+//ec: Return the next frame of a stream. The information is stored as a packet in pkt.
+//ec: The returned packet is valid until the next av_read_frame() or until av_close_input_file()
+//ec: and must be freed with av_free_packet. For video, the packet contains exactly one frame.
+//ec: For audio, it contains an integer number of frames if each frame has a known fixed size
+//ec: (e.g. PCM or ADPCM data). If the audio frames have a variable size (e.g. MPEG audio), then it contains one frame.
+//ec: pkt->pts, pkt->dts and pkt->duration are always set to correct values in AVStream.
+//ec: timebase units (and guessed if the format cannot provided them).
+//ec: pkt->pts can be AV_NOPTS_VALUE if the video format has B frames,
+//ec: so it is better to rely on pkt->dts if you do not decompress the payload.
+//ec: Returns: 0 if OK, < 0 if error or end of file.
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     AVPacketList *pktl;
@@ -2211,6 +2222,9 @@ static int tb_unreliable(AVCodecContext *c){
     return 0;
 }
 
+//ec: This function searches the stream to find information about it that might not have been obvious like frame rate.
+//ec: This is useful for file formats without headers like MPEG.
+//ec: It's recommended that you call this after opening a file. It returns >= 0 on success, AVERROR_* on error.
 int av_find_stream_info(AVFormatContext *ic)
 {
     int i, count, ret, read_size, j;
