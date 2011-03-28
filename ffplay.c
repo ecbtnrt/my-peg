@@ -124,7 +124,12 @@ enum {
     AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
 };
 
+<<<<<<< HEAD
 //ec: encapsulate the global variable
+=======
+//ec: this is very good for a c program, and it's usefull
+//ec: define some global variables or something
+>>>>>>> 606af0b9e19dc6252b3d0b51846e6590896373fc
 typedef struct VideoState {
     SDL_Thread *parse_tid;
     SDL_Thread *video_tid;

@@ -881,6 +881,8 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
     return NULL;
 }
 
+//ec: Find the decoder with the CodecID id. Returns NULL on failure.
+//ec: This should be called after getting the desired AVCodecContext from a stream in AVFormatContext, using codecCtx->codec_id.
 AVCodec *avcodec_find_decoder(enum CodecID id)
 {
     AVCodec *p;

@@ -55,7 +55,7 @@ all: $(FF_DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
 
 $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(CP) $< $@
-	$(STRIP) $@
+#	$(STRIP) $@
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
