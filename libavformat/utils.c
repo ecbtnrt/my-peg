@@ -1051,7 +1051,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     if(pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY){
         st->pts_buffer[0]= pkt->pts;
-        for(i=0; i<delay && st->pts_buffer[i] > st->pts_buffer[i+1]; i++)
+        for(i=0; i<delay && st->pts_buffer[i] > st->pts_buffer[i+1]; i++) //ec: here is bubble sort? sort the ptk with pts?
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
         if(pkt->dts == AV_NOPTS_VALUE)
             pkt->dts= st->pts_buffer[0];
@@ -2255,7 +2255,7 @@ int av_find_stream_info(AVFormatContext *ic)
             }
         }
         assert(!st->codec->codec);
-        codec = avcodec_find_decoder(st->codec->codec_id);
+        codec = avcodec_find_decoder(st->codec->codec_id); //ec: where initial the codec_id?when find the dumax format?
 
         /* Force decoding of at least one frame of codec data
          * this makes sure the codec initializes the channel configuration
