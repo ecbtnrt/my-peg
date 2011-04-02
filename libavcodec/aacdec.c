@@ -2068,7 +2068,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int err, elem_id, data_size_tmp;
     int samples = 0, multiplier;
 
-    if (show_bits(gb, 12) == 0xfff) {
+    if (show_bits(gb, 12) == 0xfff) { //ec: assemble, not understand!
         if (parse_adts_frame_header(ac, gb) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             return -1;
@@ -2194,8 +2194,9 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     int buf_offset;
     int err;
 
-    init_get_bits(&gb, buf, buf_size * 8);
-
+    init_get_bits(&gb, buf, buf_size * 8); //ec: buffer, buffer_end and size_in_bits must be present and used by every reader
+                                           //ec: multiply by 8 turning it into bits
+                                           //ec: here is only get a copy of avpkt to gb.
     if ((err = aac_decode_frame_int(avctx, data, data_size, &gb)) < 0)
         return err;
 

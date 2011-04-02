@@ -128,10 +128,10 @@ enum {
 //ec: this is very good for a c program, and it's usefull
 //ec: define some global variables or something
 typedef struct VideoState {
-    SDL_Thread *parse_tid;
-    SDL_Thread *video_tid;
-    SDL_Thread *refresh_tid;
-    AVInputFormat *iformat;
+    SDL_Thread *parse_tid; //ec: decode_thread most important
+    SDL_Thread *video_tid; //ec: video_thread
+    SDL_Thread *refresh_tid; //ec: refresh_thread
+    AVInputFormat *iformat; //ec: read the date from the cmd line
     int no_background;
     int abort_request;
     int paused;
@@ -141,12 +141,12 @@ typedef struct VideoState {
     int64_t seek_pos;
     int64_t seek_rel;
     int read_pause_return;
-    AVFormatContext *ic;
+    AVFormatContext *ic; //ec: this is the main struct of ffmpeg, important
     int dtg_active_format;
 
     int audio_stream;
 
-    int av_sync_type;
+    int av_sync_type; //ec: audio master
     double external_clock; /* external clock base */
     int64_t external_clock_time;
 
@@ -160,7 +160,7 @@ typedef struct VideoState {
     int audio_hw_buf_size;
     /* samples output by the codec. we reserve more space for avsync
        compensation */
-    DECLARE_ALIGNED(16,uint8_t,audio_buf1)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
+    DECLARE_ALIGNED(16,uint8_t,audio_buf1)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]; //ec:288000
     DECLARE_ALIGNED(16,uint8_t,audio_buf2)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
     uint8_t *audio_buf;
     unsigned int audio_buf_size; /* in bytes */
@@ -693,9 +693,9 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
     int i;
 
-    vp = &is->pictq[is->pictq_rindex];
-    if (vp->bmp) {
-#if CONFIG_AVFILTER
+    vp = &is->pictq[is->pictq_rindex]; //ec: here rindex is read index. we will read a image from the queue and display it!
+    if (vp->bmp) {                     //ec: why the rindex is not add by one and the size must reduce one?
+#if CONFIG_AVFILTER                    //ec: all this is deal at video_refresh_timer
          if (vp->picref->video->pixel_aspect.num == 0)
              aspect_ratio = 0;
          else
@@ -720,7 +720,7 @@ static void video_image_display(VideoState *is)
             {
                 sp = &is->subpq[is->subpq_rindex];
 
-                if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000))
+                if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) //ec: display the subtitle or not
                 {
                     SDL_LockYUVOverlay (vp->bmp);
 
@@ -761,7 +761,7 @@ static void video_image_display(VideoState *is)
         rect.y = is->ytop  + y;
         rect.w = width;
         rect.h = height;
-        SDL_DisplayYUVOverlay(vp->bmp, &rect);
+        SDL_DisplayYUVOverlay(vp->bmp, &rect); //ec: here is display the video image.
     } else {
 #if 0
         fill_rectangle(screen,
@@ -1144,13 +1144,13 @@ retry:
             is->video_current_pts_drift = is->video_current_pts - time;
             is->video_current_pos = vp->pos;
             if(is->pictq_size > 1){
-                VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE];
+                VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE]; //ec: 
                 assert(nextvp->target_clock >= vp->target_clock);
                 next_target= nextvp->target_clock;
             }else{
                 next_target= vp->target_clock + is->video_clock - vp->pts; //FIXME pass durations cleanly
             }
-            if(framedrop && time > next_target){
+            if(framedrop && time > next_target){ //ec: this picture is too old. 
                 is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
                 if(is->pictq_size > 1 || time > next_target + 0.5){
                     /* update queue size and signal for next picture */
@@ -1191,7 +1191,8 @@ retry:
                         else
                             sp2 = NULL;
 
-                        if ((is->video_current_pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
+                        //ec:the subtitle too old too!
+                        if ((is->video_current_pts > (sp->pts + ((float) sp->sub.end_display_time / 1000))) 
                                 || (sp2 && is->video_current_pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
                         {
                             free_subpicture(sp);
@@ -1381,14 +1382,14 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
-        SDL_CondWait(is->pictq_cond, is->pictq_mutex);
+        SDL_CondWait(is->pictq_cond, is->pictq_mutex);   //ec: the queue is full, we must wait
     }
     SDL_UnlockMutex(is->pictq_mutex);
 
     if (is->videoq.abort_request)
         return -1;
 
-    vp = &is->pictq[is->pictq_windex];
+    vp = &is->pictq[is->pictq_windex]; //ec: get a picture for the queue to display
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp ||
@@ -1474,11 +1475,11 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
         /* now we can update the picture count */
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
-            is->pictq_windex = 0;
+            is->pictq_windex = 0;  //ec: we use dequeue
         SDL_LockMutex(is->pictq_mutex);
         vp->target_clock= compute_target_time(vp->pts, is);
 
-        is->pictq_size++;
+        is->pictq_size++;  //ec: why here pictq_size++?
         SDL_UnlockMutex(is->pictq_mutex);
     }
     return 0;
@@ -2064,7 +2065,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (pkt_temp->size > 0) {
-            data_size = sizeof(is->audio_buf1);
+            data_size = sizeof(is->audio_buf1); //ec: audio_buf1:samples output by the codec
             len1 = avcodec_decode_audio3(dec,
                                         (int16_t *)is->audio_buf1, &data_size,
                                         pkt_temp);
@@ -2138,7 +2139,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         }
 
         /* read next packet */
-        if (packet_queue_get(&is->audioq, pkt, 1) < 0)
+        if (packet_queue_get(&is->audioq, pkt, 1) < 0) //ec: here is the first step, get a audio pkt from the queue
             return -1;
         if(pkt->data == flush_pkt.data){
             avcodec_flush_buffers(dec);
@@ -2149,8 +2150,8 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         pkt_temp->size = pkt->size;
 
         /* if update the audio clock with the pts */
-        if (pkt->pts != AV_NOPTS_VALUE) {
-            is->audio_clock = av_q2d(is->audio_st->time_base)*pkt->pts;
+        if (pkt->pts != AV_NOPTS_VALUE) {       //ec: the pkt have pts, so update the audio clock
+            is->audio_clock = av_q2d(is->audio_st->time_base)*pkt->pts; //ec: av_q2d:rational to double 1/44100
         }
     }
 }
@@ -2243,7 +2244,7 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        wanted_spec.freq = avctx->sample_rate;
+        wanted_spec.freq = avctx->sample_rate; //ec: 48000
         wanted_spec.format = AUDIO_S16SYS;
         wanted_spec.channels = avctx->channels;
         wanted_spec.silence = 0;
@@ -2645,8 +2646,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->xleft = 0;
 
     /* start video display */
-    is->pictq_mutex = SDL_CreateMutex();
-    is->pictq_cond = SDL_CreateCond();
+    is->pictq_mutex = SDL_CreateMutex(); //ec: mutex
+    is->pictq_cond = SDL_CreateCond(); //ec: Create a condition variable
 
     is->subpq_mutex = SDL_CreateMutex();
     is->subpq_cond = SDL_CreateCond();

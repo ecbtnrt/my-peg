@@ -373,6 +373,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
     AVInputFormat *fmt1 = NULL, *fmt;
     int score;
 
+    //ec: is match id3v2? mp3
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
         if (lpd.buf_size > id3len + 16) {
@@ -548,7 +549,11 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         return AVERROR(EINVAL);
     }
 
+    //ec: max_probe_size is 1048576(1 MBit)
+    //ec: PROBE_BUF_MIN is 2048 (2KBit)
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt && ret >= 0;
+        //ec: at first we ensure the probe_size is add probe_size<<1
+        //ec: when probe_size is equle as max_probe_size, we add 1 to probe_size or it will be very big or overflow
         probe_size = FFMIN(probe_size<<1, FFMAX(max_probe_size, probe_size+1))) {
         int ret, score = probe_size < max_probe_size ? AVPROBE_SCORE_MAX/4 : 0;
         int buf_offset = (probe_size == PROBE_BUF_MIN) ? 0 : probe_size>>1;

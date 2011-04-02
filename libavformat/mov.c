@@ -1768,7 +1768,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_dlog(c->fc, "frame size %d\n", st->codec->frame_size);
     }
 
-    mov_build_index(c, st);
+    mov_build_index(c, st);  //ec: what's this?!
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];

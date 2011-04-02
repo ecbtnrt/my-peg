@@ -176,6 +176,8 @@ int url_alloc(URLContext **puc, const char *filename, int flags)
 {
     URLProtocol *up;
     char proto_str[128], proto_nested[128], *ptr;
+    //ec: strspn - Calculate the length of the initial substring of s which only contain letters in accept
+    //ec: How about other symbol?Chinese etc.
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
     if (filename[proto_len] != ':' || is_dos_path(filename))
@@ -228,7 +230,7 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
             return ret;
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
-            if (fast_retries)
+            if (fast_retries)       //ec: what the fast_retries do here?!
                 fast_retries--;
             else
                 usleep(1000);
@@ -237,7 +239,7 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
         if (ret)
            fast_retries = FFMAX(fast_retries, 2);
         len += ret;
-        if (url_interrupt_cb())
+        if (url_interrupt_cb()) //ec: is interrrupt already?
             return AVERROR_EXIT;
     }
     return len;

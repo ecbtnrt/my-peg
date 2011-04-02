@@ -514,7 +514,7 @@ static void fill_buffer(AVIOContext *s)
 {
     uint8_t *dst= !s->max_packet_size && s->buf_end - s->buffer < s->buffer_size ? s->buf_end : s->buffer;
     int len= s->buffer_size - (dst - s->buffer);
-    int max_buffer_size = s->max_packet_size ? s->max_packet_size : IO_BUFFER_SIZE;
+    int max_buffer_size = s->max_packet_size ? s->max_packet_size : IO_BUFFER_SIZE; //ec: IO_BUFFER_SIZE is 32768
 
     /* no need to do anything if EOF already reached */
     if (s->eof_reached)
@@ -535,7 +535,7 @@ static void fill_buffer(AVIOContext *s)
     }
 
     if(s->read_packet)
-        len = s->read_packet(s->opaque, dst, len);
+        len = s->read_packet(s->opaque, dst, len); //ec: here we will call avio.c+246 function url_read.
     else
         len = 0;
     if (len <= 0) {
@@ -811,13 +811,13 @@ int url_fdopen(AVIOContext **s, URLContext *h)
     if (max_packet_size) {
         buffer_size = max_packet_size; /* no need to bufferize more than one packet */
     } else {
-        buffer_size = IO_BUFFER_SIZE;
+        buffer_size = IO_BUFFER_SIZE; //ec: 32768 32KBit
     }
     buffer = av_malloc(buffer_size);
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    *s = av_mallocz(sizeof(AVIOContext));
+    *s = av_mallocz(sizeof(AVIOContext)); //ec: the AVIOContext **s is initialed here
     if(!*s) {
         av_free(buffer);
         return AVERROR(ENOMEM);

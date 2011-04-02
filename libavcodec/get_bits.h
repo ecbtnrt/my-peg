@@ -391,7 +391,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 static inline void init_get_bits(GetBitContext *s,
                    const uint8_t *buffer, int bit_size)
 {
-    int buffer_size = (bit_size+7)>>3;
+    int buffer_size = (bit_size+7)>>3; //ec: i don't know what's here do. maybe it's enshure the buffer_size
     if (buffer_size < 0 || bit_size < 0) {
         buffer_size = bit_size = 0;
         buffer = NULL;

@@ -81,8 +81,9 @@ struct MpegTSFilter {
 #define MAX_PIDS_PER_PROGRAM 64
 struct Program {
     unsigned int id; //program id/service id
-    unsigned int nb_pids;
-    unsigned int pids[MAX_PIDS_PER_PROGRAM];
+    unsigned int nb_pids;                    //ec: number of pids
+    unsigned int pids[MAX_PIDS_PER_PROGRAM]; //ec: every program has many different pids for video audio or subtitle
+                                             //ec: here is from ts pid
 };
 
 struct MpegTSContext {
@@ -114,12 +115,12 @@ struct MpegTSContext {
     /* private mpegts data */
     /* scan context */
     /** structure to keep track of Program->pids mapping     */
-    unsigned int nb_prg;
-    struct Program *prg;
+    unsigned int nb_prg;  //ec: number of program
+    struct Program *prg;  //ec: erery program's information
 
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
-    MpegTSFilter *pids[NB_PID_MAX];
+    MpegTSFilter *pids[NB_PID_MAX]; //ec: 8192
 };
 
 /* TS stream handling */
@@ -216,16 +217,16 @@ static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid, unsigned i
 static int discard_pid(MpegTSContext *ts, unsigned int pid)
 {
     int i, j, k;
-    int used = 0, discarded = 0;
+    int used = 0, discarded = 0;  //ec: can we only use one flag?
     struct Program *p;
     for(i=0; i<ts->nb_prg; i++) {
-        p = &ts->prg[i];
-        for(j=0; j<p->nb_pids; j++) {
-            if(p->pids[j] != pid)
+        p = &ts->prg[i];               //ec: get a program
+        for(j=0; j<p->nb_pids; j++) {  //ec: it has many different pids
+            if(p->pids[j] != pid)      
                 continue;
             //is program with id p->id set to be discarded?
             for(k=0; k<ts->stream->nb_programs; k++) {
-                if(ts->stream->programs[k]->id == p->id) {
+                if(ts->stream->programs[k]->id == p->id) {  //ec: AVFormatContext, the program's information
                     if(ts->stream->programs[k]->discard == AVDISCARD_ALL)
                         discarded++;
                     else
@@ -280,6 +281,8 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
     }
 }
 
+//ec: here is initialize the filter of pat pmt and sdt.
+//ec: cb is callback function
 static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts, unsigned int pid,
                                          SectionCallback *section_cb, void *opaque,
                                          int check_crc)
@@ -354,6 +357,9 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
     ts->pids[pid] = NULL;
 }
 
+//ec: what did we do?
+//ec: we check all the byte in buf where is a ts header
+//ec: we get where is the best score please and reture the score
 static int analyze(const uint8_t *buf, int size, int packet_size, int *index){
     int stat[TS_MAX_PACKET_SIZE];
     int i;
@@ -386,9 +392,9 @@ static int get_packet_size(const uint8_t *buf, int size)
     if (size < (TS_FEC_PACKET_SIZE * 5 + 1))
         return -1;
 
-    score    = analyze(buf, size, TS_PACKET_SIZE, NULL);
-    dvhs_score    = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL);
-    fec_score= analyze(buf, size, TS_FEC_PACKET_SIZE, NULL);
+    score    = analyze(buf, size, TS_PACKET_SIZE, NULL);             //ec: check the pkt size is 188
+    dvhs_score    = analyze(buf, size, TS_DVHS_PACKET_SIZE, NULL);   //ec: check the pkt size is 192
+    fec_score= analyze(buf, size, TS_FEC_PACKET_SIZE, NULL);         //ec: chekc the pkt size is 204
 //    av_log(NULL, AV_LOG_DEBUG, "score: %d, dvhs_score: %d, fec_score: %d \n", score, dvhs_score, fec_score);
 
     if     (score > fec_score && score > dvhs_score) return TS_PACKET_SIZE;
@@ -652,10 +658,10 @@ static int mpegts_push_data(MpegTSFilter *filter,
     while (buf_size > 0) {
         switch(pes->state) {
         case MPEGTS_HEADER:
-            len = PES_START_SIZE - pes->data_index;
+            len = PES_START_SIZE - pes->data_index; //ec: PES_START_SIZE is 6
             if (len > buf_size)
                 len = buf_size;
-            memcpy(pes->header + pes->data_index, p, len);
+            memcpy(pes->header + pes->data_index, p, len); //ec: copy 6 Byte data
             pes->data_index += len;
             p += len;
             buf_size -= len;
@@ -1249,9 +1255,18 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     int64_t pos;
 
     pid = AV_RB16(packet + 1) & 0x1fff;
+    //ec: pat 		0x0000	program association table
+    //ec: cat 		0x0001
+    //ec: pmt 		0x0002
+    //ec: nit 		0x0010
+    //ec: sdt.bat 	0x0011 	service description table
+    //ec: eit 		0x0012
+    //ec: tdt tot 	0x0014
+    //ec: blank		0x1fff	the data_byte can be everything value
     if(pid && discard_pid(ts, pid))
         return 0;
-    is_start = packet[1] & 0x40;
+    is_start = packet[1] & 0x40; //ec: payload_unit_start_indicator, if is_start is 0, there is no seek
+                                 //ec: or if is_start is 1, it will seek one Byte. example: len = *p++ +1258
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
         add_pes_stream(ts, pid, -1);
@@ -1260,25 +1275,26 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     if (!tss)
         return 0;
 
+    //ec: it's little endian, high on the forward space and low on the behind space
     /* continuity check (currently not used) */
-    cc = (packet[3] & 0xf);
+    cc = (packet[3] & 0xf); //ec: continuity_counter
     cc_ok = (tss->last_cc < 0) || ((((tss->last_cc + 1) & 0x0f) == cc));
     tss->last_cc = cc;
 
     /* skip adaptation field */
-    afc = (packet[3] >> 4) & 3;
-    p = packet + 4;
+    afc = (packet[3] >> 4) & 3; //ec: adaptation_field_control here the afc is 1
+    p = packet + 4; //ec: the p is data_byte now!
     if (afc == 0) /* reserved value */
         return 0;
     if (afc == 2) /* adaptation field only */
         return 0;
-    if (afc == 3) {
+    if (afc == 3) { //ec: adaptation_field and data_byte
         /* skip adapation field */
         p += p[0] + 1;
     }
     /* if past the end of packet, ignore */
     p_end = packet + TS_PACKET_SIZE;
-    if (p >= p_end)
+    if (p >= p_end)  //ec: is it possible?
         return 0;
 
     pos = avio_tell(ts->stream->pb);
@@ -1287,7 +1303,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
             /* pointer field present */
-            len = *p++;
+            len = *p++; //ec: move the pointer p and get the value
             if (p + len > p_end)
                 return 0;
             if (len && cc_ok) {
@@ -1609,7 +1625,7 @@ static int mpegts_read_packet(AVFormatContext *s,
 
     if (avio_tell(s->pb) != ts->last_pos) {
         /* seek detected, flush pes buffer */
-        for (i = 0; i < NB_PID_MAX; i++) {
+        for (i = 0; i < NB_PID_MAX; i++) { //ec: 8192
             if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
                 PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
                 av_freep(&pes->buffer);

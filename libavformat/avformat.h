@@ -241,12 +241,12 @@ typedef struct AVProbeData {
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
 
 typedef struct AVFormatParameters {
-    AVRational time_base;
+    AVRational time_base; //ec: initialization is 1/25
     int sample_rate;
     int channels;
-    int width;
-    int height;
-    enum PixelFormat pix_fmt;
+    int width; //ec: frame
+    int height; //ec: frame
+    enum PixelFormat pix_fmt; //ec: frame
     int channel; /**< Used to select DV channel. */
     const char *standard; /**< TV standard, NTSC, PAL, SECAM */
     unsigned int mpeg2ts_raw:1;  /**< Force raw MPEG-2 transport stream output, if possible. */
@@ -694,7 +694,7 @@ typedef struct AVFormatContext {
     AVIOContext *pb;
     unsigned int nb_streams;
 #if FF_API_MAX_STREAMS
-    AVStream *streams[MAX_STREAMS];
+    AVStream *streams[MAX_STREAMS]; //ec: 1024
 #else
     AVStream **streams;
 #endif

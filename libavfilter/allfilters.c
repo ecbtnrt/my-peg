@@ -26,6 +26,9 @@
           extern AVFilter avfilter_##y##_##x ; \
           if(CONFIG_##X##_FILTER )  avfilter_register(&avfilter_##y##_##x ); }
 
+
+//ec: what's about filter doing? read the code
+//ec: 
 void avfilter_register_all(void)
 {
     static int initialized;

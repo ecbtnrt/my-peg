@@ -89,7 +89,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
     return 0;
 }
 
-int av_dup_packet(AVPacket *pkt)
+int av_dup_packet(AVPacket *pkt)        //ec: duplicate, put the data in a new place in memory
 {
     if (((pkt->destruct == av_destruct_packet_nofree) || (pkt->destruct == NULL)) && pkt->data) {
         uint8_t *data;
