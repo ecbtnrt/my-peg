@@ -45,8 +45,8 @@ int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate,
 {
     MPADecodeHeader s1, *s = &s1;
 
-    if (ff_mpa_check_header(head) != 0)
-        return -1;
+    if (ff_mpa_check_header(head) != 0) 
+         return -1;
 
     if (ff_mpegaudio_decode_header(s, head) != 0) {
         return -1;

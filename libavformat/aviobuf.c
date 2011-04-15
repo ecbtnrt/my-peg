@@ -603,7 +603,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     size1 = size;
     while (size > 0) {
         len = s->buf_end - s->buf_ptr;
-        if (len > size)
+        if (len > size) //ec: may the len is 32768, but we only need 188 byte or little remain it the buff, so reinitial it!
             len = size;
         if (len == 0) {
             if(size > s->buffer_size && !s->update_checksum){
@@ -624,13 +624,13 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     s->buf_end = s->buffer/* + len*/;
                 }
             }else{
-                fill_buffer(s);
+                fill_buffer(s); //ec: read a buff len 32768 to fille the s, yes, it is too much.
                 len = s->buf_end - s->buf_ptr;
                 if (len == 0)
                     break;
             }
-        } else {
-            memcpy(buf, s->buf_ptr, len);
+        } else { 
+            memcpy(buf, s->buf_ptr, len); //ec: get 188 bytes or less
             buf += len;
             s->buf_ptr += len;
             size -= len;

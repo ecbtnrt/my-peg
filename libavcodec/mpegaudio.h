@@ -193,7 +193,8 @@ void ff_mpegaudiodec_init_altivec(MPADecodeContext *s);
 /* fast header check for resync */
 static inline int ff_mpa_check_header(uint32_t header){
     /* header */
-    if ((header & 0xffe00000) != 0xffe00000)
+    if ((header & 0xffe00000) != 0xffe00000)//ec: the first 11 bits 1111 1111 111 Audio version ID
+                                            //ec: Frame sync to find the header (all bits are always set)
         return -1;
     /* layer check */
     if ((header & (3<<17)) == 0)

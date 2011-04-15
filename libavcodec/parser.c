@@ -140,6 +140,11 @@ int av_parser_parse(AVCodecParserContext *s,
     return av_parser_parse2(s, avctx, poutbuf, poutbuf_size, buf, buf_size, pts, dts, AV_NOPTS_VALUE);
 }
 
+//ec: please firstly parse your bitstream by  av_parser_parse2() to
+//ec: get a whole frame before you feed it to avcodec_decode_video()
+//ec: I cannot get more information about it!
+//ec: in a es has one video frame or some andio samples.
+//ec: what we do here is try to get next frame or samples
 int av_parser_parse2(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,

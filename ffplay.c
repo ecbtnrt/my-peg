@@ -1435,8 +1435,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
         dst_pix_fmt = PIX_FMT_YUV420P;
         memset(&pict,0,sizeof(AVPicture));
-        pict.data[0] = vp->bmp->pixels[0];
-        pict.data[1] = vp->bmp->pixels[2];
+        pict.data[0] = vp->bmp->pixels[0]; //ec: pixels is a pointer point to a pointer, and data[0] is a pointer too!
+        pict.data[1] = vp->bmp->pixels[2]; //ec: and here why ?
         pict.data[2] = vp->bmp->pixels[1];
 
         pict.linesize[0] = vp->bmp->pitches[0];

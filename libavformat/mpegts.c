@@ -694,11 +694,14 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         mpegts_set_stream_info(pes->st, pes, 0, 0);
                     }
 
-                    pes->total_size = AV_RB16(pes->header + 4);
+                    pes->total_size = AV_RB16(pes->header + 4); //ec: get the size of the pes
+                                                                //ec: here execute only once at the  first start ts pkt
+                                                                //ec: it will read one by one ts pkt and get the size
+                                                                
                     /* NOTE: a zero total size means the PES size is
                        unbounded */
                     if (!pes->total_size)
-                        pes->total_size = MAX_PES_PAYLOAD;
+                        pes->total_size = MAX_PES_PAYLOAD; 
 
                     /* allocate pes buffer */
                     pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
@@ -796,7 +799,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
             if (buf_size > 0 && pes->buffer) {
                 if (pes->data_index > 0 && pes->data_index+buf_size > pes->total_size) {
                     new_pes_packet(pes, ts->pkt);
-                    pes->total_size = MAX_PES_PAYLOAD;
+                    pes->total_size = MAX_PES_PAYLOAD; //ec: 200*1024
                     pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
@@ -1260,8 +1263,9 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     //ec: pmt 		0x0002
     //ec: nit 		0x0010
     //ec: sdt.bat 	0x0011 	service description table
-    //ec: eit 		0x0012
+    //ec: eit 		0x0012	event information table
     //ec: tdt tot 	0x0014
+    //ec: 			0x0100	0x0101... audio or video
     //ec: blank		0x1fff	the data_byte can be everything value
     if(pid && discard_pid(ts, pid))
         return 0;
@@ -1364,7 +1368,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
     int skip, len;
 
     for(;;) {
-        len = avio_read(pb, buf, TS_PACKET_SIZE);
+        len = avio_read(pb, buf, TS_PACKET_SIZE); //ec: get 188 bytes frome the AVIOContext
         if (len != TS_PACKET_SIZE)
             return AVERROR(EIO);
         /* check paquet sync byte */
@@ -1399,7 +1403,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
         packet_num++;
         if (nb_packets != 0 && packet_num >= nb_packets)
             break;
-        ret = read_packet(s, packet, ts->raw_packet_size);
+        ret = read_packet(s, packet, ts->raw_packet_size); //ec: get one packet of size 188 Bytes
         if (ret != 0)
             return ret;
         ret = handle_packet(ts, packet);
